@@ -10,6 +10,10 @@ actor "Salarié" as sal
 actor "Coordinateur" as coord
 actor "Administrateur" as admin
 
+' Déclaration de l'héritage
+Coordinateur -|> Salarié
+Administrateur -|> Coordinateur
+
 ' --- Systèmes Externes ---
 database "Système DSK\n(Pointages RH)" as dsk
 database "Logiciel EpiLogg\n(ERP Prestations)" as epilogg
