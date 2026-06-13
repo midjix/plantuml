@@ -1,3 +1,4 @@
+```plantuml
 @startuml
 !theme plain
 skinparam activityShape roundBox
@@ -24,3 +25,4 @@ endwhile (non)
 
 stop
 @enduml
+```
