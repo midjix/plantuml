@@ -40,7 +40,7 @@ coord --> UC_team_stats
 admin --> UC_global_stats
 admin --> UC_matrix
 admin --> UC_organigramme
-```
 admin --> UC_import
 
 @enduml
+```
