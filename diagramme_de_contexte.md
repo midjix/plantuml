@@ -11,8 +11,8 @@ actor "Coordinateur" as coord
 actor "Administrateur" as admin
 
 ' Déclaration de l'héritage
-Coordinateur -|> Salarié
-Administrateur -|> Coordinateur
+coord -|> sal
+admin -|> coord
 
 ' --- Systèmes Externes ---
 database "Système DSK\n(Pointages RH)" as dsk
