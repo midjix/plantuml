@@ -1,3 +1,4 @@
+```plantuml
 @startuml
 !theme plain
 left to right direction
@@ -27,4 +28,4 @@ dsk ...> app : Fournit les heures travaillées\n(Normales, Congés, Maladie...)
 epilogg ...> app : Fournit les prestations facturées\n(Codes 8.1, 9.1, SLEMO...)
 
 @enduml
-  
+``` 
