@@ -26,7 +26,7 @@ rectangle "Application de Suivi d'Efficacité" {
     usecase "Exporter les données sous format Excel" as UC_export
     usecase "Gérer la matrice de conversion des forfaits\n(Historisation des tarifs 8.1, 8.2, 9.1)" as UC_matrix
     usecase "Gérer l'organigramme et les affectations" as UC_organigramme
-    usecase "Importer les fichiers de pointage (DSK / EpiLogg)" as UC_import
+    usecase "Mise à jours des les données (DSK / EpiLogg)" as UC_import
     
     ' Relations d'extension pour l'export Excel
     UC_dashboard <.. UC_export : <<extend>>
