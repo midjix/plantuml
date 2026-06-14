@@ -4,11 +4,11 @@
 skinparam activityShape roundBox
 
 start
-:L'Administrateur initie l'importation;
+:L'administrateur initie l'importation;
 fork
-  :Uploader le fichier DSK\n(Heures travaillées);
+  :Importation du fichier DSK\n(Heures travaillées);
 fork again
-  :Uploader le fichier EpiLogg\n(Forfaits de prestations);
+  :Importation du fichier EpiLogg\n(Forfaits de prestations);
 end fork
 
 :Analyse et nettoyage des données brutes;
@@ -19,9 +19,9 @@ while (Pour chaque ligne de prestation EpiLogg) is (oui)
   :Convertir le forfait en minutes réelles;
 endwhile (non)
 
-:Agréger les données par utilisateur (Matricule) et par mois;
+:Agréger les données par utilisateur et par mois;
 :Enregistrer les résultats consolidés dans la base de données;
-:Afficher un message de succès à l'Administrateur;
+:Afficher un message de succès à l'administrateur;
 
 stop
 @enduml

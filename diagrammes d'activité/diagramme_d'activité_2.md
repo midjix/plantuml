@@ -1,3 +1,4 @@
+```plantuml
 @startuml
 !theme plain
 
@@ -20,3 +21,4 @@ repeat
 repeat while (Modifier les filtres ?) is (oui)
 stop
 @enduml
+```
