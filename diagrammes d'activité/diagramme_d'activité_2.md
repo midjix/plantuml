@@ -19,7 +19,7 @@ repeat
   endif
 
 repeat while (Modifier les filtres ?) is (oui)
-end repeat (non)
+(non)
 stop
 @enduml
 ```
