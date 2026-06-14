@@ -1,3 +1,4 @@
+```plantuml
 @startuml
 !theme plain
 skinparam classAttributeIconSize 0
@@ -73,3 +74,4 @@ CategorieSuivi "1" -- "0..*" RegleConversion : historique >
 CategorieSuivi "1" -- "0..*" DonneeEpilogue : catégorise >
 
 @enduml
+```
