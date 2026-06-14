@@ -18,8 +18,7 @@ repeat
   else (non)
   endif
 
-repeat while (Modifier les filtres ?) is (oui)
-  (non)
+repeat while (Modifier les filtres ?) is (oui) not (non)
 stop
 @enduml
 ```
