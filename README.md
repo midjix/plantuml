@@ -76,7 +76,7 @@ Ce journal trace les écarts entre la conception initiale (mémoire, chapitres 1
 |---|---|
 | Classes | Nouvelle classe `Tarif` ; `RegleConversion` rattachée au tarif (plus à `CategorieSuivi`) ; `CategorieSuivi` sans `code` unique, avec `tarif_id` ; `DonneeEpilogg.quantite` décimal + `type_prestation` ; `StatistiqueMensuelle` avec les indicateurs de la cascade ; `CategorieHeure` + `Supervision` |
 
-**À reporter dans le mémoire** : les trois règles ci-dessus, et l'exemple chiffré d'avril 2026 (127 h → 117 h → 106 h ; 64 h facturables ; efficacité 0,60).
+**À reporter dans le mémoire** : les trois règles ci-dessus, et l'exemple chiffré de référence (exemple 1 du fichier, avril 2026 : 128 h → 106 h → 98 h ; 82 h facturables ; efficacité 0,8367). L'exemple « 127 h » du même fichier est incohérent (30 h de congés listées, 2 h déduites) et ne doit pas être repris : point à confirmer avec la Fondation (voir `dev/docs/PLAN-DE-TESTS.md`, § anomalies du 22/10).
 
 ### 22/10/2026 (soir) — Alignement sur le moteur ETL codé et le schéma réel d'EpiLogg
 
