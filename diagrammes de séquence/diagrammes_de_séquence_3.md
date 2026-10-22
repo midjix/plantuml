@@ -44,7 +44,7 @@ else ConnecteurEpilogg (SQL)
     epidb --> cepi : Forfaits
     cepi --> etl : Forfaits (DTO, code normalisé « T 8.1 » => « 8.1 »)
     etl -> cepi : lirePrestations(dateFrom, dateTo)
-    cepi -> epidb : SELECT b.id, b.user_id, u.email, b.date, b.attend_type_id, b.updated_at\nFROM benefits b JOIN users u ON u.id = b.user_id\nWHERE b.date BETWEEN :from AND :to
+    cepi -> epidb : SELECT b.id, b.user_id, u.email, b.appointment_date, a.type_id,\ni.name, b.service_package_used, b.travel_package_used\nFROM benefits b JOIN attends a ON a.id = b.attend_id\nLEFT JOIN interventions i ON i.id = b.intervention_id\nLEFT JOIN users u ON u.id = b.user_id\nWHERE b.appointment_date BETWEEN :from AND :to
     epidb --> cepi : Prestations
     cepi --> etl : Prestations (DTO)
     deactivate cepi
@@ -59,9 +59,8 @@ end
 etl -> db : UPSERT services (par codeDept)\n+ comptes_dsk (nouveaux comptes => catégorie « autre », hors effectif)\n+ categories_suivi (par epilogg_attend_type_id, règle initiale si aucune)
 etl -> db : UPSERT users (par dsk_no_pers)
 etl -> etl : Appariement salarié : email EpiLogg <-> users.email\n(persisté dans epilogg_user_id ; sans correspondance => alerte, exclusion)
-etl -> db : UPSERT donnees_dsk (clé user + compte + date)
-etl -> db : UPSERT donnees_epilogg (clé reference_externe = benefits.id)
-etl -> db : DELETE donnees_epilogg absentes de la source sur la période\n(réconciliation : EpiLogg supprime physiquement les annulations)
+etl -> db : TRANSACTION « fenêtre remplacée » : DELETE donnees_dsk de la période\npuis INSERT des lignes reçues (DSK recalcule ses compteurs chaque jour)
+etl -> db : TRANSACTION « fenêtre remplacée » : DELETE donnees_epilogg de la période\npuis INSERT des prestations reçues (une annulation = ligne absente\nde la source = ligne supprimée ; reference_externe = benefits.id)
 
 note over etl
   Seules les extractions sont parallèles :
@@ -69,11 +68,11 @@ note over etl
   mis à jour depuis DSK.
 end note
 
-== Consolidation ==
+== Consolidation (ConsolidationService) ==
 loop Pour chaque (salarié, mois) touché
-    etl -> db : SELECT donnees_dsk + comptes_dsk (compte_effectif)
-    etl -> db : SELECT donnees_epilogg + règle en vigueur à la date de chaque prestation
-    etl -> etl : minutes_prestations = Σ quantité × minutes(règle)\nratio = minutes_prestations / minutes_effectives (NULL si 0)
+    etl -> db : SELECT minutes DSK par catégorie (comptes effectifs)
+    etl -> db : SELECT prestations + tarif ; règle en vigueur à la date de chaque prestation
+    etl -> etl : CalculEfficacite : total, dispo EPI, dispo client,\nfacturables = Σ quantité × minutes(règle), activité interne,\nefficacité = facturables / dispo client (NULL si <= 0), brute
     etl -> db : UPSERT statistiques_mensuelles
 end
 

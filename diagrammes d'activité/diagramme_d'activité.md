@@ -37,12 +37,13 @@ partition "2. Moteur de conversion et de calcul (EtlService)" {
         :Cumuler quantité × minutes de la règle;
     endwhile (Non)
 
-    :Sommer les minutes DSK des compteurs marqués « effectifs »\n(heures normales, formation, déplacements… selon qualification);
+    :Sommer les minutes DSK par catégorie de compteur\n(normales, congés, maladie, formation, supervision…);
+    :Total = somme des compteurs effectifs\nDispo EPI = total - congés - maladie\nDispo client = dispo EPI - formation - supervision - activité interne;
 
-    if (Minutes effectives > 0 ?) then (Oui)
-        :Ratio = minutes_prestations / minutes_effectives;
+    if (Dispo client > 0 ?) then (Oui)
+        :Efficacité réelle = prestations facturables / dispo client\nEfficacité brute = (facturables + activité interne) / total;
     else (Non)
-        :Ratio = NULL (non calculable);
+        :Efficacité = NULL (non calculable);
     endif
 
     :Enregistrer dans le cache statistiques_mensuelles\n(une ligne par salarié et par mois);

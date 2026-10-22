@@ -78,7 +78,14 @@ Ce journal trace les écarts entre la conception initiale (mémoire, chapitres 1
 
 **À reporter dans le mémoire** : les trois règles ci-dessus, et l'exemple chiffré d'avril 2026 (127 h → 117 h → 106 h ; 64 h facturables ; efficacité 0,60).
 
-**À faire au prochain passage** : le diagramme d'activité global et la séquence 3 décrivent encore le ratio comme « prestations / heures effectives » ; ils seront mis à jour avec le code du moteur de calcul (EtlService).
+### 22/10/2026 (soir) — Alignement sur le moteur ETL codé et le schéma réel d'EpiLogg
+
+| Diagramme | Modification |
+|---|---|
+| Activité (global) | Partition 2 : cascade réelle (total → dispo EPI → dispo client, efficacité réelle et brute) à la place de « prestations / heures effectives » |
+| Séquence 3 | Requête EpiLogg réelle (`benefits` → `attends` → `attend_types`, `interventions`, `service_package_used`) ; stratégie « fenêtre remplacée » en transaction (DSK et EpiLogg) ; consolidation par `ConsolidationService` / `CalculEfficacite` |
+
+**À reporter dans le mémoire** : la découverte du schéma réel (chaîne par `attends`, quantité décimale confirmée, forfait déplacement) et la stratégie de fenêtre remplacée.
 
 ### 05/09/2026 — Alignement sur le schéma codé (16/08) et sur les modes d'accès aux sources (mails CBC / Fondation, 26-28/08)
 
