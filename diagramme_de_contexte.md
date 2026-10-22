@@ -5,31 +5,42 @@ left to right direction
 skinparam packageStyle rectangle
 skinparam actorStyle hollow
 
-' --- Acteurs Humains ---
+title Diagramme de contexte — application de suivi d'efficacité (Fondation EPI)
+
+' --- Acteurs humains ---
 actor "Salarié" as sal
 actor "Coordinateur" as coord
 actor "Administrateur" as admin
 
-' Déclaration de l'héritage
+' Héritage de droits
 coord -|> sal
 admin -|> coord
 
-' --- Systèmes Externes ---
-database "Système DSK\n(Pointages RH)" as dsk
-database "Logiciel EpiLogg\n(ERP Prestations)" as epilogg
+' --- Acteur technique ---
+control "Planificateur\n(Laravel Scheduler, 1×/jour)" as cron
 
-' --- Le Système Principal ---
+' --- Systèmes externes (LECTURE SEULE) ---
+cloud "Système DSK\n(Pointage RH)\nAPI REST · HTTPS · token Bearer" as dsk
+database "EpiLogg (ERP prestations)\nBase MariaDB du prestataire CBC\nCompte SQL lecture seule · via VPN" as epilogg
+
+' --- Le système ---
 rectangle "Application de Suivi\nd'Efficacité" as app {
 }
 
-' --- Interactions Acteurs <-> Système ---
-sal --> app : Consulte son tableau de bord\n(heures, prestations, ratio)
+' --- Interactions acteurs <-> système ---
+sal --> app : Consulte son tableau de bord\n(heures, prestations, ratio), exporte en Excel
 coord --> app : Consulte les statistiques\nagrégées de son service
-admin --> app : Configure les règles de forfaits\net consulte toutes les statistiques
+admin --> app : Gère la matrice de conversion, l'organigramme,\nqualifie les compteurs DSK, supervise les imports
+cron --> app : Déclenche l'import quotidien
 
-' --- Interactions Systèmes <-> Système ---
-dsk ...> app : Fournit les heures travaillées\n(Normales, Congés, Maladie...)
-epilogg ...> app : Fournit les prestations facturées\n(Codes 8.1, 9.1, SLEMO...)
+' --- Interactions système <-> systèmes externes ---
+app ..> dsk : Lit les minutes par compteur\n(GET /accounts/calc/all) et les salariés (GET /listAll)
+app ..> epilogg : Lit les forfaits (attend_types)\net les prestations (benefits)
+
+note bottom of epilogg
+  Aucun identifiant commun avec DSK :
+  correspondance des salariés par **email**.
+end note
 
 @enduml
-``` 
+```

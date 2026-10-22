@@ -3,38 +3,55 @@
 !theme plain
 skinparam maxMessageSize 150
 
+title Séquence 2 — Modification d'un barème de forfait (historisation)
+
 actor "Administrateur" as admin
 participant "Frontend\n(Vue.js)" as vue
-participant "API Backend\n(Laravel)" as api
-database "Base de Données\n(MariaDB)" as db
+participant "API Backend\n(RegleConversionController)" as api
+participant "MatriceConversionService" as service
+database "Base de données\n(MariaDB)" as db
 
-admin -> vue : Saisit la nouvelle valeur du forfait (ex: 8.1 = 45 min)
+admin -> vue : Saisit le nouveau barème\n(ex. 8.1 = 45 min à partir du 01/01/2026)
 activate vue
 
-vue -> api : POST /api/regles-conversion\n{categorie_id, valeur, date_debut}
+vue -> api : POST /api/regles-conversion\n{categorie_suivi_id, minutes, date_debut_validite, commentaire}
 activate api
 
-api -> db : SELECT * FROM regles_conversion\nWHERE categorie_id = X AND date_fin_validite IS NULL
-activate db
-db --> api : Ancienne règle trouvée
-deactivate db
+api -> api : Vérification token + rôle Administrateur\nValidation serveur des entrées
 
-opt Si une ancienne règle active existe
-    api -> db : UPDATE regles_conversion\nSET date_fin_validite = date_debut - 1 jour
-    activate db
-    db --> api : Succès
-    deactivate db
+api -> service : changerBareme(categorie, minutes, dateDebut, admin)
+activate service
+
+service -> db : BEGIN TRANSACTION
+activate db
+
+service -> db : SELECT * FROM regles_conversion\nWHERE categorie_suivi_id = :c AND date_fin_validite IS NULL
+db --> service : Règle ouverte (ou aucune)
+
+opt Une règle ouverte existe
+    service -> db : UPDATE regles_conversion\nSET date_fin_validite = :dateDebut - 1 jour\nWHERE id = :ancienne
+    db --> service : OK
 end
 
-api -> db : INSERT INTO regles_conversion\n(valeur_minutes, date_debut_validite...)
-activate db
-db --> api : Succès (Nouvel ID)
+service -> db : INSERT INTO regles_conversion\n(categorie_suivi_id, minutes, date_debut_validite, created_by)
+db --> service : Nouvel ID
+
+service -> db : COMMIT
 deactivate db
 
-api --> vue : Réponse HTTP 201 Created
+note right of service
+  Règle d'or : on ne modifie JAMAIS
+  la valeur d'une règle existante.
+  Les périodes passées gardent leur barème.
+end note
+
+service --> api : Nouvelle règle
+deactivate service
+
+api --> vue : HTTP 201 Created (JSON)
 deactivate api
 
-vue --> admin : Affiche un message de confirmation (Toast)
+vue --> admin : Confirmation (toast)
 deactivate vue
 @enduml
 ```

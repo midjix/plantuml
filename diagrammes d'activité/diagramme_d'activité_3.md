@@ -1,19 +1,31 @@
 ```plantuml
 @startuml
 !theme plain
+title Diagramme d'activité 3 — Modification d'un barème de forfait (matrice historisée)
 
 start
-:L'Administrateur accède aux paramètres de conversion;
-:Sélectionner un code forfait à modifier (ex: 8.1 AISP);
-:Saisir la nouvelle valeur en minutes\net la nouvelle date d'application;
+:L'Administrateur accède à la matrice de conversion;
+:Sélectionner un forfait (ex. 8.1 AISP);
+:Saisir la nouvelle valeur en minutes,\nla date d'application et un commentaire;
 
-if (Une règle active existe-t-elle déjà pour ce code ?) then (oui)
-  :Clôturer l'ancienne règle\n(Ajouter une 'Date de fin' = 'Date d'application' - 1 jour);
-else (non)
-endif
+:Validation serveur\n(minutes > 0, date valide, rôle Administrateur);
 
-:Insérer la nouvelle règle dans la base de données\n(avec 'Date de début' et sans 'Date de fin');
-:Afficher la confirmation de mise à jour;
+partition "Transaction" {
+  if (Une règle ouverte existe pour ce forfait ?) then (oui)
+    if (Date d'application > début de la règle ouverte ?) then (non)
+      :Refuser : chevauchement de périodes;
+      stop
+    else (oui)
+    endif
+    :Clôturer l'ancienne règle\n(date_fin_validite = date d'application - 1 jour);
+  else (non)
+  endif
+
+  :Insérer la nouvelle règle\n(date_debut_validite, date_fin_validite = NULL, created_by);
+}
+
+:Recalculer les statistiques mensuelles\nà partir de la date d'application;
+:Afficher la confirmation;
 
 stop
 @enduml

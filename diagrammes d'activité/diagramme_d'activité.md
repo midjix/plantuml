@@ -1,55 +1,65 @@
 ```plantuml
 @startuml
 !theme plain
-title Diagramme d'activité - Processus de Calcul et d'Affichage de l'Efficacité
+title Diagramme d'activité — Processus global : collecte, calcul et restitution de l'efficacité
 
 start
 
-partition "1. Collecte & Alignement des Données" {
+partition "1. Collecte et rapprochement des données (lecture seule)" {
     fork
-        :Extraire les heures de pointage (Source DSK);
+        :Lire les salariés et les minutes par compteur\n(API DSK, token Bearer);
     fork again
-        :Extraire les prestations (Source EpiLogg);
+        :Lire les forfaits et les prestations\n(base EpiLogg, compte SQL lecture seule, VPN);
     end fork
 
-    :Associer les enregistrements via l'identifiant unique;
-    
-    if (Correspondance de l'employé réussie ?) then (Non)
-        :Générer une alerte d'incohérence de jointure;
-        :Logguer l'erreur d'alignement;
-        stop
+    :Rapprocher les salariés :\nDSK par noPers / matricule,\nEpiLogg par adresse email;
+
+    if (Correspondance trouvée pour chaque salarié ?) then (Non)
+        :Journaliser l'écart dans le journal des imports;
+        :Signaler à l'Administrateur les salariés sans correspondance;
+        note right
+          L'import continue pour les salariés appariés ;
+          les autres sont exclus du calcul, jamais inventés.
+        end note
     else (Oui)
-        :Valider l'alignement du profil;
     endif
+
+    :Enregistrer les données brutes\n(donnees_dsk, donnees_epilogg — import idempotent);
+    :Réconcilier les prestations supprimées côté EpiLogg\n(présentes chez nous, absentes de la source sur la période);
 }
 
-partition "2. Moteur de Conversion & Calcul" {
-    :Sélectionner les lignes de prestations EpiLogg sur la période;
-    
-    while (Pour chaque ligne de prestation ?) is (Reste des lignes)
-        :Lire la date de l'intervention;
-        :Rechercher la règle de conversion active en BDD\n(date entre date_debut_validite et date_fin_validite);
-        :Multiplier le nombre de forfaits par la valeur en minutes;
-        :Convertir le cumul en heures réelles;
-    endwhile (Toutes les lignes traitées)
+partition "2. Moteur de conversion et de calcul (EtlService)" {
+    :Sélectionner les prestations de la période;
 
-    :Calculer le volume total des heures de prestations EPI;
-    :Récupérer le volume total des heures normales de travail (DSK);
-    
-    :Calculer le Ratio d'Efficacité\n(Heures Prestations / Heures Normales);
-    :Sauvegarder les données calculées dans la table des statistiques mensuelles;
+    while (Reste des prestations ?) is (Oui)
+        :Lire la date et le forfait de la prestation;
+        :Rechercher la règle de conversion en vigueur à cette date\n(date_debut_validite <= date <= date_fin_validite ou NULL);
+        :Cumuler quantité × minutes de la règle;
+    endwhile (Non)
+
+    :Sommer les minutes DSK des compteurs marqués « effectifs »\n(heures normales, formation, déplacements… selon qualification);
+
+    if (Minutes effectives > 0 ?) then (Oui)
+        :Ratio = minutes_prestations / minutes_effectives;
+    else (Non)
+        :Ratio = NULL (non calculable);
+    endif
+
+    :Enregistrer dans le cache statistiques_mensuelles\n(une ligne par salarié et par mois);
 }
 
-partition "3. Restitution & Restriction d'Accès" {
-    :Connexion de l'utilisateur à l'application;
-    
-    if (Quel est le rôle de l'utilisateur ?) then (Salarié)
-        :Restreindre l'accès à son propre identifiant;
-        :Afficher le tableau de bord individuel\n(Heures, prestations et ratio personnel);
+partition "3. Restitution et contrôle d'accès" {
+    :Authentification de l'utilisateur (token);
+
+    if (Rôle de l'utilisateur ?) then (Salarié)
+        :Restreindre les requêtes à son propre user_id;
+        :Afficher le tableau de bord individuel\n(minutes converties en heures à l'affichage);
     else (Coordinateur / Administrateur)
-        :Activer les filtres avancés (Service, collaborateur, période);
-        :Afficher la vue de synthèse agrégée globale ou par équipe;
+        :Activer les filtres (service, collaborateur, période);
+        :Afficher la synthèse agrégée par équipe ou globale;
     endif
+
+    :Export Excel de la vue courante (optionnel);
 }
 
 stop

@@ -1,0 +1,56 @@
+@startuml
+!theme plain
+
+title Diagramme de déploiement — cible de production et sources externes (05/09/2026)
+
+node "Poste client\n(navigateur)" as client {
+    artifact "Application SPA\n(Vue.js)" as spa
+}
+
+node "VPS Ubuntu (production)" as vps {
+    node "Docker (Laravel Sail)" as docker {
+        node "Conteneur laravel.test\n(PHP 8.5)" as app {
+            artifact "API REST Laravel 13" as laravel
+            artifact "Scheduler (CRON)" as cron
+        }
+        node "Conteneur mariadb" as dbnode {
+            database "MariaDB 12.3 LTS\n(base application)" as mariadb
+        }
+    }
+    artifact "Client VPN\n(WatchGuard SSLVPN)" as vpn
+}
+
+cloud "Réseau de production\nFondation EPI (via VPN)" as reseau_epi {
+    node "Serveur EpiLogg\n(hébergé par CBC)" as srv_epilogg {
+        database "Base fondation_epi\n(compte SQL lecture seule)" as epilogg_db
+    }
+}
+
+cloud "Internet" as internet {
+    node "Serveur DSK\n(éditeur du pointage)" as srv_dsk {
+        artifact "API REST DSK\n(token Bearer)" as dsk_api
+    }
+}
+
+spa ..> laravel : HTTPS (443)
+laravel --> mariadb : TCP 3306 (réseau Docker interne)
+cron --> laravel : déclenche l'import quotidien
+laravel --> vpn : tunnel SSLVPN
+vpn ..> epilogg_db : TCP 3306, lecture seule
+laravel ..> dsk_api : HTTPS (443)
+
+note bottom of vpn
+  Contrainte d'infrastructure issue des échanges
+  avec CBC : la base EpiLogg n'est joignable que
+  depuis le réseau de la Fondation. Le VPS devra
+  soit maintenir un tunnel VPN permanent, soit être
+  hébergé dans ce réseau. Point à arbitrer avec CBC.
+end note
+
+note bottom of docker
+  En développement : même compose.yaml sous Windows
+  (port BDD publié 13306, WWWUSER/WWWGROUP = 1000).
+  Parité dev / prod.
+end note
+
+@enduml

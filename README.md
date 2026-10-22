@@ -57,3 +57,76 @@ Conseil : Ce diagramme est indispensable si tu utilises une architecture scindé
 But : Représenter la disposition physique du matériel (serveurs, terminaux clients) et l'endroit où les composants logiciels y sont installés.
 
 Conseil : N'oublie pas d'indiquer les protocoles de communication entre les différents nœuds de ton infrastructure (comme le HTTPS pour la navigation web ou le port spécifique pour les requêtes SQL vers ta base de données).
+
+---
+
+## Journal des mises à jour des diagrammes
+
+Ce journal trace les écarts entre la conception initiale (mémoire, chapitres 1-2) et le code réel, pour garder la cohérence documentation ↔ code demandée au jury.
+
+### 22/10/2026 — Règles métier validées avec la Fondation (« Données app EPI.xlsx »)
+
+**Ce qui a changé côté projet** :
+- Le code 8.1 / 8.2 / 9.1 est un **tarif** (nature du service pour l'État), partagé par plusieurs types de suivi ; c'est lui qui porte la valeur du forfait (60 / 60 / 30 min, autres = 60).
+- La quantité de forfaits saisie par le salarié peut être **décimale**.
+- Le ratio suit une **cascade** : total DSK → dispo EPI (− congés − maladie) → dispo client (− formation − supervision − activité interne) ; efficacité réelle = facturables / dispo client, objectif 0,75.
+
+**Diagrammes modifiés** :
+| Diagramme | Modification |
+|---|---|
+| Classes | Nouvelle classe `Tarif` ; `RegleConversion` rattachée au tarif (plus à `CategorieSuivi`) ; `CategorieSuivi` sans `code` unique, avec `tarif_id` ; `DonneeEpilogg.quantite` décimal + `type_prestation` ; `StatistiqueMensuelle` avec les indicateurs de la cascade ; `CategorieHeure` + `Supervision` |
+
+**À reporter dans le mémoire** : les trois règles ci-dessus, et l'exemple chiffré d'avril 2026 (127 h → 117 h → 106 h ; 64 h facturables ; efficacité 0,60).
+
+**À faire au prochain passage** : le diagramme d'activité global et la séquence 3 décrivent encore le ratio comme « prestations / heures effectives » ; ils seront mis à jour avec le code du moteur de calcul (EtlService).
+
+### 05/09/2026 — Alignement sur le schéma codé (16/08) et sur les modes d'accès aux sources (mails CBC / Fondation, 26-28/08)
+
+**Ce qui a changé côté projet** :
+- EpiLogg = **accès direct à la base en lecture seule via VPN** (plus d'hésitation API / BDD / fichier).
+- Aucun identifiant commun DSK ↔ EpiLogg : la correspondance des salariés se fait par **email** (et non par matricule).
+- EpiLogg **supprime physiquement** les prestations annulées → l'ETL doit réconcilier, pas seulement incrémenter.
+- Le schéma codé a introduit `CompteDsk` (format long des données DSK), `Import` (journal), les énumérations, et des attributs absents du diagramme initial.
+
+**Diagrammes modifiés** :
+| Diagramme | Modification |
+|---|---|
+| Contexte | DSK = API REST/HTTPS, EpiLogg = base SQL lecture seule via VPN ; acteur Planificateur ajouté ; note « correspondance par email » |
+| Cas d'utilisation | Ajout : S'authentifier, Qualifier les compteurs DSK, Recalculer, Superviser les imports ; acteur Planificateur ; relations include |
+| Activité (global) | Rapprochement par email, réconciliation des suppressions, ratio NULL si 0 minute effective, minutes (pas heures) |
+| Activité 1 (import) | Fichiers Excel → connecteurs API / SQL ; deux branches parallèles détaillées ; gestion d'échec |
+| Activité 2 (dashboard) | Le système **lit le cache**, il ne recalcule pas ; périmètre selon le rôle |
+| Activité 3 (barème) | Transaction, contrôle de chevauchement, `created_by`, recalcul déclenché |
+| Classes | Réécrit à partir des migrations/modèles : 9 classes + 4 énumérations, attributs réels (`minutes`, `epilogg_user_id`, `reference_externe`…), scopes, notes de conception |
+| Séquence 1 | `user_id`/`annee`, contrôle de rôle, note « lecture du cache uniquement » |
+| Séquence 2 | Service métier `MatriceConversionService`, transaction, `created_by` |
+| Séquence 3 | Réécrit : Scheduler ou Admin → EtlService → ConnecteurDsk (HTTP) / ConnecteurEpilogg (SQL) → réconciliation → consolidation |
+| Composants (`.puml`) | Options EpiLogg remplacées par la BDD ; interface `ConnecteurSource` (Adaptateur) ; trois couches explicites ; `MatriceConversionService` |
+| Déploiement (`.puml`) | VPS Ubuntu, MariaDB 12.3, client VPN vers le réseau Fondation (EpiLogg), HTTPS vers DSK ; note sur la contrainte VPN en production |
+
+**À reporter dans le mémoire** : `DonneeDsk` en format long + `CompteDsk` ; table `imports` ; jointure par email ; réconciliation des suppressions EpiLogg ; contrainte VPN pour le déploiement.
+
+Le fichier `test.plum` était un brouillon du diagramme de composants, désormais intégré dans `diagrammes_de_composants.puml` : il peut être supprimé.
+
+### 08/09/2026 — Cas d'utilisation : l'authentification devient une pré-condition globale
+
+**Ce qui a changé** : les quatre relations `<<include>>` qui reliaient « Consulter son tableau de bord », « Consulter les statistiques de son service », « Consulter les statistiques globales » et « Gérer la matrice de conversion » au cas « S'authentifier (token) » sont supprimées. Le cas « S'authentifier » est conservé et relié directement au Salarié (liaison héritée par le Coordinateur et l'Administrateur) ; les `<<extend>>` vers l'export Excel et les trois `<<include>>` vers « Recalculer les statistiques mensuelles » aussi. Une note attachée au rectangle du système énonce la pré-condition globale.
+
+**Pourquoi** :
+- Lisibilité : un `include` vers l'authentification depuis chaque cas d'utilisation surcharge le diagramme sans apporter d'information métier — l'authentification est transverse, elle est portée techniquement par un middleware appliqué à toutes les routes de l'API.
+- Exactitude : le `include` aurait été faux pour le Planificateur, qui déclenche « Importer les données » depuis le conteneur applicatif sans authentification HTTP. Une pré-condition « pour tout acteur humain » exprime correctement cette exception.
+- Les `include` restants gardent un sens métier fort : toute modification des données de calcul (import, barème, qualification d'un compte) déclenche un recalcul.
+
+**À reporter** : § 2.2.2 du dossier de projet (texte et colonne « Préconditions » du tableau des cas d'utilisation), diapositive « Conception fonctionnelle » du support.
+
+### 09/09/2026 — Import : parallélisme limité aux extractions (activité 1, séquence 3)
+
+**Incohérence détectée** : le diagramme d'activité 1 plaçait l'appariement des salariés par e-mail à l'intérieur de la branche EpiLogg, exécutée en parallèle de la branche DSK qui met à jour la table `users`. Or l'appariement dépend des salariés insérés par la branche DSK (dépendance de données entre branches) : selon l'ordre d'exécution, un salarié nouvellement présent dans DSK et EpiLogg pouvait être signalé à tort « sans correspondance ». La séquence 3 était, elle, entièrement séquentielle, et le diagramme global rapprochait les salariés après la jointure : trois représentations différentes du même processus.
+
+**Correction** :
+- Activité 1 : le `fork` ne contient plus que les deux extractions (lectures DSK et EpiLogg). Le test d'échec d'extraction est placé juste après la jointure, avant tout enregistrement. Puis, séquentiellement : mise à jour des référentiels (services, compteurs DSK, forfaits normalisés) → upsert des salariés DSK → appariement par e-mail (mémorisation de `epilogg_user_id`, journalisation et exclusion des salariés sans correspondance) → enregistrement idempotent de `donnees_dsk` et `donnees_epilogg` → réconciliation → recalcul → journal « succès ». Note ajoutée.
+- Séquence 3 : les deux extractions sont entourées d'un fragment `par` ; les `UPSERT` et l'appariement sont déplacés après le fragment, dans le même ordre ; un `alt` matérialise l'échec d'extraction. Réconciliation, consolidation et clôture du journal inchangées.
+- Diagramme global (figure 3) : déjà cohérent (extractions en parallèle, puis rapprochement, enregistrement, réconciliation) ; non modifié.
+
+**À reporter** : § 2.2.3 et § 2.4.3 du dossier de projet, § 3.5 (étapes de l'`EtlService`), diapositive « Le moteur ETL » du support.
+

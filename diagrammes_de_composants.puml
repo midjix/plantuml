@@ -1,0 +1,70 @@
+@startuml
+!theme plain
+skinparam componentStyle uml2
+
+title Diagramme de composants — architecture en couches et connecteurs (05/09/2026)
+
+package "Frontend (client web)" {
+    [Interface utilisateur\n(Vue.js SPA)] as vue
+    [Client HTTP\n(Axios)] as http_client
+    vue --> http_client : actions utilisateur
+}
+
+package "Systèmes externes (lecture seule)" {
+    [API DSK\n(pointage RH)] as dsk_api
+    database "Base EpiLogg\n(MariaDB, prestataire CBC)\ncompte SQL lecture seule" as epilogg_db
+}
+
+package "Backend (API Laravel)" {
+    interface "API REST\n(JSON, token Bearer)" as api_rest
+
+    package "Couche API" {
+        [Contrôleurs REST\n+ validation + policies] as controllers
+    }
+
+    package "Couche métier" {
+        [EtlService\n(orchestrateur d'import\net de consolidation)] as etl
+        [MatriceConversionService\n(historisation des barèmes)] as matrice
+        interface "ConnecteurSource" as iconn
+        [ConnecteurDsk\n(adaptateur HTTP)] as conn_dsk
+        [ConnecteurEpilogg\n(adaptateur SQL)] as conn_epilogg
+    }
+
+    package "Couche persistance" {
+        [ORM Eloquent\n(modèles, scopes)] as orm
+    }
+
+    [Planificateur\n(Laravel Scheduler)] as cron
+
+    api_rest - controllers
+
+    controllers --> orm : lecture du cache\nStatistiqueMensuelle
+    controllers --> matrice : changement de barème
+    controllers --> etl : import manuel
+    cron --> etl : import quotidien
+
+    etl --> iconn : demande les données
+    iconn <|.. conn_dsk
+    iconn <|.. conn_epilogg
+
+    conn_dsk --> dsk_api : HTTPS (1×/jour)
+    conn_epilogg --> epilogg_db : SQL via VPN (1×/jour)\nconnexion « epilogg », READ ONLY
+
+    etl --> orm : upsert flux bruts\n+ consolidation
+    matrice --> orm : clôture + création de règle\n(transaction)
+}
+
+database "Base locale" {
+    [MariaDB 12.3\n(application)] as mariadb
+    orm --> mariadb : SQL (TCP 3306)
+}
+
+http_client ..> api_rest : HTTPS
+
+note bottom of iconn
+  Pattern **Adaptateur** : l'EtlService ne dépend
+  que de l'interface. Changer de mode d'accès
+  (API, BDD, fichier) = changer un connecteur.
+end note
+
+@enduml
