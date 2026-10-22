@@ -87,6 +87,16 @@ Ce journal trace les écarts entre la conception initiale (mémoire, chapitres 1
 
 **À reporter dans le mémoire** : la découverte du schéma réel (chaîne par `attends`, quantité décimale confirmée, forfait déplacement) et la stratégie de fenêtre remplacée.
 
+### 22/10/2026 (nuit) — API de consultation codée (lecture du cache, policies de périmètre)
+
+| Diagramme | Modification |
+|---|---|
+| Séquence 1 | Participant `StatistiquesService` (couche métier) entre le contrôleur et la base ; les trois contrôles dans l'ordre réel (jeton 401, validation 422, policy 403) ; requête réelle (`annee` seule, tri par mois, paramètres liés) ; synthèse annuelle = cascade sur les sommes ; forme du JSON ; note sur la mesure de performance |
+| Activité 2 | Année courante par défaut (12 mois + synthèse) au lieu du mois courant ; étape « validation puis policy » ; agrégation par la même cascade |
+| Composants | `StatistiquesService`, `ConsolidationService + CalculEfficacite` ajoutés dans la couche métier ; les contrôleurs ne lisent plus l'ORM directement ; flux ETL → consolidation → cache et matrice → recalcul ; base EpiLogg = MySQL 8 (relevé réel) |
+
+**Écart signalé** : le mémoire (§ 2.4) décrivait la lecture du cache depuis le contrôleur ; le code place un service de consultation entre les deux pour porter l'agrégation (rapport des sommes, jamais moyenne des ratios). À reporter dans le § 3 et la diapositive « Architecture en couches ».
+
 ### 05/09/2026 — Alignement sur le schéma codé (16/08) et sur les modes d'accès aux sources (mails CBC / Fondation, 26-28/08)
 
 **Ce qui a changé côté projet** :

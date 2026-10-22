@@ -2,7 +2,7 @@
 !theme plain
 skinparam componentStyle uml2
 
-title Diagramme de composants — architecture en couches et connecteurs (05/09/2026)
+title Diagramme de composants — architecture en couches et connecteurs (22/10/2026)
 
 package "Frontend (client web)" {
     [Interface utilisateur\n(Vue.js SPA)] as vue
@@ -12,7 +12,7 @@ package "Frontend (client web)" {
 
 package "Systèmes externes (lecture seule)" {
     [API DSK\n(pointage RH)] as dsk_api
-    database "Base EpiLogg\n(MariaDB, prestataire CBC)\ncompte SQL lecture seule" as epilogg_db
+    database "Base EpiLogg\n(MySQL 8, prestataire CBC)\ncompte SQL lecture seule" as epilogg_db
 }
 
 package "Backend (API Laravel)" {
@@ -23,7 +23,9 @@ package "Backend (API Laravel)" {
     }
 
     package "Couche métier" {
-        [EtlService\n(orchestrateur d'import\net de consolidation)] as etl
+        [StatistiquesService\n(consultation : lecture du cache,\nagrégations service / Total EPI)] as stats
+        [EtlService\n(orchestrateur d'import)] as etl
+        [ConsolidationService\n+ CalculEfficacite\n(cascade d'efficacité)] as conso
         [MatriceConversionService\n(historisation des barèmes)] as matrice
         interface "ConnecteurSource" as iconn
         [ConnecteurDsk\n(adaptateur HTTP)] as conn_dsk
@@ -38,7 +40,7 @@ package "Backend (API Laravel)" {
 
     api_rest - controllers
 
-    controllers --> orm : lecture du cache\nStatistiqueMensuelle
+    controllers --> stats : consultation\n(périmètre validé par les policies)
     controllers --> matrice : changement de barème
     controllers --> etl : import manuel
     cron --> etl : import quotidien
@@ -50,7 +52,12 @@ package "Backend (API Laravel)" {
     conn_dsk --> dsk_api : HTTPS (1×/jour)
     conn_epilogg --> epilogg_db : SQL via VPN (1×/jour)\nconnexion « epilogg », READ ONLY
 
-    etl --> orm : upsert flux bruts\n+ consolidation
+    stats --> conso : même cascade\n(CalculEfficacite) sur les sommes
+    stats --> orm : lecture du cache\nStatistiqueMensuelle uniquement
+    etl --> orm : fenêtre remplacée\n(flux bruts, transaction)
+    etl --> conso : consolidation des mois touchés
+    conso --> orm : écriture du cache\n(seule source de calcul)
+    matrice --> conso : recalcul depuis\nla date d'application
     matrice --> orm : clôture + création de règle\n(transaction)
 }
 
