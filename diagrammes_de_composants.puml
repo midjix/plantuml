@@ -8,9 +8,11 @@ package "Frontend (client web)" {
     [Vues et composants\n(Vue 3, Tailwind, Chart.js)] as vue
     [Routeur (vue-router)\n+ gardes par rôle] as routeur
     [État global (Pinia)\nsession, thème] as stores
-    [Client HTTP (axios)\njeton Sanctum, 401 => déconnexion] as http_client
+    [Client HTTP (axios)\njeton Sanctum, Accept-Language,\n401 => déconnexion] as http_client
+    [Internationalisation\n(vue-i18n, dictionnaires fr / en / de,\nformats Intl)] as i18n
     routeur --> vue : affiche la vue
     vue --> stores : lit / met à jour
+    vue --> i18n : textes et formats
     stores --> http_client : appels API
 }
 
@@ -23,7 +25,11 @@ package "Backend (API Laravel)" {
     interface "API REST\n(JSON, token Bearer)" as api_rest
 
     package "Couche API" {
+        [Middleware\n(auth:sanctum, role:,\nlangue Accept-Language)] as middleware
         [Contrôleurs REST\n+ validation + policies] as controllers
+        [Fichiers de langue\n(lang/fr, en, de)] as lang
+        middleware --> controllers
+        controllers ..> lang : messages traduits
     }
 
     package "Couche métier" {
@@ -44,7 +50,7 @@ package "Backend (API Laravel)" {
     [Planificateur\n(Laravel Scheduler)] as cron
     [File d'attente\n(jobs : import manuel,\nrecalcul) + worker] as queue
 
-    api_rest - controllers
+    api_rest - middleware
 
     controllers --> stats : consultation\n(périmètre validé par les policies)
     controllers --> matrice : changement de barème

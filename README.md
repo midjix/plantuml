@@ -87,6 +87,17 @@ Ce journal trace les écarts entre la conception initiale (mémoire, chapitres 1
 
 **À reporter dans le mémoire** : la découverte du schéma réel (chaîne par `attends`, quantité décimale confirmée, forfait déplacement) et la stratégie de fenêtre remplacée.
 
+### 23/10/2026 (soir) — Interface trilingue (FR / EN / DE) et front étape B (service, globale, administration)
+
+| Diagramme | Modification |
+|---|---|
+| Composants | Paquet Frontend : composant « Internationalisation (vue-i18n, dictionnaires fr/en/de) » ; couche API : middleware « Langue (Accept-Language) » ; fichiers de langue dans la couche API |
+| Contexte | Note : interface et messages d'API disponibles en français, anglais et allemand (Fondation luxembourgeoise) |
+
+**Nouvelle exigence** (William, 23/10/2026) : application disponible en français, anglais et allemand. Implémentée des deux côtés (API : `SetLocale` + `lang/*/epi.php` + `laravel-lang` ; front : `vue-i18n`). **À reporter dans le mémoire** : exigence non fonctionnelle « multilingue » (§ 1.3), choix du français comme langue de référence, mécanisme `Accept-Language`.
+
+Les vues coordinateur / globale / administration consomment les endpoints déjà modélisés (séquences 1 et 2, cas d'utilisation) : aucun nouveau flux, pas de modification des séquences.
+
 ### 23/10/2026 (après-midi) — Front Vue.js, étape A (socle, connexion, tableau de bord salarié)
 
 | Diagramme | Modification |

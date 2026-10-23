@@ -42,5 +42,11 @@ note bottom of epilogg
   correspondance des salariés par **email**.
 end note
 
+note bottom of app
+  Fondation luxembourgeoise : interface et messages
+  de l'API disponibles en **français** (référence),
+  **anglais** et **allemand** (exigence du 23/10/2026).
+end note
+
 @enduml
 ```
