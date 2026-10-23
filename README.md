@@ -87,6 +87,15 @@ Ce journal trace les écarts entre la conception initiale (mémoire, chapitres 1
 
 **À reporter dans le mémoire** : la découverte du schéma réel (chaîne par `attends`, quantité décimale confirmée, forfait déplacement) et la stratégie de fenêtre remplacée.
 
+### 23/10/2026 — Endpoints d'administration codés (supervision, import manuel, recalcul, qualification, matrice, organigramme)
+
+| Diagramme | Modification |
+|---|---|
+| Cas d'utilisation | « Qualifier les compteurs DSK » devient « Qualifier les référentiels importés » (compteurs DSK **et** types de suivi EpiLogg : le tarif déduit du `rate_name` est parfois absent, l'Administrateur le fixe) ; « Recalculer » précisé (à la demande ou inclus, en file d'attente) et relié directement à l'Administrateur ; organigramme : activité et mot de passe initial ajoutés |
+| Composants | `ReferentielService` dans la couche métier ; composant « File d'attente (jobs) + worker » : les traitements longs (import manuel, recalcul) sont mis en file par les contrôleurs (réponse 202) et exécutés par un worker, qui appelle `EtlService` / `ConsolidationService` |
+
+**Écart signalé** : le mémoire ne mentionnait pas de file d'attente (l'import manuel y est décrit comme un appel direct du contrôleur à l'EtlService). Le code met l'import en file d'attente pour ne pas bloquer une requête HTTP plusieurs minutes (VPN, dizaines de milliers de lignes) ; conséquence pour le déploiement (§ 4) : un worker `php artisan queue:work` doit tourner à côté du CRON. À reporter dans le § 3 (import manuel) et le § 4 (déploiement VPS).
+
 ### 22/10/2026 (nuit) — API de consultation codée (lecture du cache, policies de périmètre)
 
 | Diagramme | Modification |

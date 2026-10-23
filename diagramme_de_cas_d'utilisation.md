@@ -33,12 +33,12 @@ rectangle "Application de Suivi d'Efficacité" as app {
 
     ' Paramétrage (Administrateur)
     usecase "Gérer la matrice de conversion des forfaits\n(historisation : clôture + nouvelle règle)" as UC_matrix
-    usecase "Gérer l'organigramme et les affectations\n(services, rôles, correspondance email EpiLogg)" as UC_organigramme
-    usecase "Qualifier les compteurs DSK\n(catégorie, entre dans les heures effectives ?)" as UC_comptes
+    usecase "Gérer l'organigramme et les affectations\n(services, rôles, activité, email d'appariement\nEpiLogg, mot de passe initial)" as UC_organigramme
+    usecase "Qualifier les référentiels importés\n(compteurs DSK : catégorie, entre dans le total ?\ntypes de suivi EpiLogg : tarif, service)" as UC_comptes
 
     ' Import et supervision
     usecase "Importer les données\n(DSK / EpiLogg)" as UC_import
-    usecase "Recalculer les statistiques mensuelles" as UC_recalc
+    usecase "Recalculer les statistiques mensuelles\n(à la demande ou inclus, en file d'attente)" as UC_recalc
     usecase "Superviser les imports\n(journal, erreurs de correspondance)" as UC_supervision
 
     ' Relations
@@ -67,6 +67,7 @@ admin --> UC_matrix
 admin --> UC_organigramme
 admin --> UC_comptes
 admin --> UC_import
+admin --> UC_recalc
 admin --> UC_supervision
 cron --> UC_import
 

@@ -24,6 +24,7 @@ package "Backend (API Laravel)" {
 
     package "Couche métier" {
         [StatistiquesService\n(consultation : lecture du cache,\nagrégations service / Total EPI)] as stats
+        [ReferentielService\n(qualification compteurs DSK\net types de suivi)] as referentiel
         [EtlService\n(orchestrateur d'import)] as etl
         [ConsolidationService\n+ CalculEfficacite\n(cascade d'efficacité)] as conso
         [MatriceConversionService\n(historisation des barèmes)] as matrice
@@ -37,12 +38,17 @@ package "Backend (API Laravel)" {
     }
 
     [Planificateur\n(Laravel Scheduler)] as cron
+    [File d'attente\n(jobs : import manuel,\nrecalcul) + worker] as queue
 
     api_rest - controllers
 
     controllers --> stats : consultation\n(périmètre validé par les policies)
     controllers --> matrice : changement de barème
-    controllers --> etl : import manuel
+    controllers --> referentiel : qualification
+    controllers --> queue : import manuel, recalcul\n(réponse 202, suivi dans le journal)
+    referentiel --> queue : recalcul des mois touchés
+    queue --> etl : import manuel
+    queue --> conso : recalcul
     cron --> etl : import quotidien
 
     etl --> iconn : demande les données
