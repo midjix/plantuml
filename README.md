@@ -87,6 +87,17 @@ Ce journal trace les écarts entre la conception initiale (mémoire, chapitres 1
 
 **À reporter dans le mémoire** : la découverte du schéma réel (chaîne par `attends`, quantité décimale confirmée, forfait déplacement) et la stratégie de fenêtre remplacée.
 
+### 23/10/2026 (après-midi) — Front Vue.js, étape A (socle, connexion, tableau de bord salarié)
+
+| Diagramme | Modification |
+|---|---|
+| Composants | Paquet Frontend détaillé : vues et composants (Vue 3, Tailwind, Chart.js), routeur avec gardes par rôle, état global Pinia (session, thème), client HTTP axios (jeton Sanctum, 401 → déconnexion) |
+| Déploiement | La SPA est servie par Laravel (coquille HTML + assets compilés par Vite dans `public/build`) ; worker de file d'attente ajouté dans le conteneur applicatif ; EpiLogg = MySQL 8 ; note de déploiement (`npm ci && npm run build`, CRON et worker supervisés) ; DSK = SRV-DATA injoignable via le VPN actuel |
+
+**Choix validés avec William le 23/10** : organisation des écrans et page de connexion inspirées de DSKnet (familières aux salariés), couleurs de la charte EPI (orange `#F39200`, anthracite `#575756`), **menu latéral coloré selon le rôle** (salarié orange, coordinateur ocre, administrateur anthracite), thème clair + sombre automatique, Tailwind + composants maison, livraison en deux étapes (A : socle + tableau de bord salarié ; B : vues coordinateur / globale / administration).
+
+**À reporter dans le mémoire** : la SPA n'est pas un projet séparé mais compilée par Vite et servie par Laravel (un seul déploiement, même origine → pas de CORS) ; le jeton est conservé dans le navigateur (`localStorage`), choix discuté dans PREPARATION-JURY (entrée 11).
+
 ### 23/10/2026 — Endpoints d'administration codés (supervision, import manuel, recalcul, qualification, matrice, organigramme)
 
 | Diagramme | Modification |

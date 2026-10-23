@@ -5,9 +5,13 @@ skinparam componentStyle uml2
 title Diagramme de composants — architecture en couches et connecteurs (22/10/2026)
 
 package "Frontend (client web)" {
-    [Interface utilisateur\n(Vue.js SPA)] as vue
-    [Client HTTP\n(Axios)] as http_client
-    vue --> http_client : actions utilisateur
+    [Vues et composants\n(Vue 3, Tailwind, Chart.js)] as vue
+    [Routeur (vue-router)\n+ gardes par rôle] as routeur
+    [État global (Pinia)\nsession, thème] as stores
+    [Client HTTP (axios)\njeton Sanctum, 401 => déconnexion] as http_client
+    routeur --> vue : affiche la vue
+    vue --> stores : lit / met à jour
+    stores --> http_client : appels API
 }
 
 package "Systèmes externes (lecture seule)" {

@@ -1,20 +1,21 @@
 @startuml
 !theme plain
 
-title Diagramme de déploiement — cible de production et sources externes (05/09/2026)
+title Diagramme de déploiement — cible de production et sources externes (23/10/2026)
 
 node "Poste client\n(navigateur)" as client {
-    artifact "Application SPA\n(Vue.js)" as spa
+    artifact "Application SPA\n(Vue 3, chargée depuis Laravel :\nassets compilés par Vite)" as spa
 }
 
 node "VPS Ubuntu (production)" as vps {
     node "Docker (Laravel Sail)" as docker {
         node "Conteneur laravel.test\n(PHP 8.5)" as app {
-            artifact "API REST Laravel 13" as laravel
-            artifact "Scheduler (CRON)" as cron
+            artifact "API REST Laravel 13\n+ coquille HTML de la SPA\n(public/build)" as laravel
+            artifact "Scheduler (CRON)\nimport nocturne 02:00" as cron
+            artifact "Worker de file d'attente\n(queue:work : imports manuels,\nrecalculs)" as worker
         }
         node "Conteneur mariadb" as dbnode {
-            database "MariaDB 12.3 LTS\n(base application)" as mariadb
+            database "MariaDB 12.3 LTS\n(base application :\nflux bruts, cache, jobs)" as mariadb
         }
     }
     artifact "Client VPN\n(WatchGuard SSLVPN)" as vpn
@@ -22,19 +23,20 @@ node "VPS Ubuntu (production)" as vps {
 
 cloud "Réseau de production\nFondation EPI (via VPN)" as reseau_epi {
     node "Serveur EpiLogg\n(hébergé par CBC)" as srv_epilogg {
-        database "Base fondation_epi\n(compte SQL lecture seule)" as epilogg_db
+        database "Base fondation_epi\n(MySQL 8, compte SQL lecture seule)" as epilogg_db
     }
 }
 
 cloud "Internet" as internet {
-    node "Serveur DSK\n(éditeur du pointage)" as srv_dsk {
-        artifact "API REST DSK\n(token Bearer)" as dsk_api
+    node "Serveur DSK\n(SRV-DATA, éditeur du pointage)" as srv_dsk {
+        artifact "API REST DSKnet\n(token Bearer)" as dsk_api
     }
 }
 
-spa ..> laravel : HTTPS (443)
+spa ..> laravel : HTTPS (443)\nJSON + jeton Sanctum
 laravel --> mariadb : TCP 3306 (réseau Docker interne)
 cron --> laravel : déclenche l'import quotidien
+worker --> mariadb : lit la file `jobs`
 laravel --> vpn : tunnel SSLVPN
 vpn ..> epilogg_db : TCP 3306, lecture seule
 laravel ..> dsk_api : HTTPS (443)
@@ -45,12 +47,16 @@ note bottom of vpn
   depuis le réseau de la Fondation. Le VPS devra
   soit maintenir un tunnel VPN permanent, soit être
   hébergé dans ce réseau. Point à arbitrer avec CBC.
+  Au 22/10/2026, SRV-DATA (DSK) n'est pas joignable
+  à travers le VPN actuel : ouverture à demander.
 end note
 
 note bottom of docker
   En développement : même compose.yaml sous Windows
-  (port BDD publié 13306, WWWUSER/WWWGROUP = 1000).
-  Parité dev / prod.
+  (port BDD publié 13306, WWWUSER/WWWGROUP = 1000),
+  Vite en mode dev sur le poste (port 5173).
+  Parité dev / prod. Déploiement : `npm ci && npm run build`
+  puis `php artisan migrate`, CRON et worker supervisés.
 end note
 
 @enduml
